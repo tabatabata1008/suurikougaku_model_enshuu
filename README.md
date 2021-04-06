@@ -1,1 +1,1 @@
-# suurikougaku_model_enshuu
+# 数理工学モデル化演習の作成物
