@@ -1,0 +1,615 @@
+//====================================================================/
+//　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　/
+// artisoc                                                            /
+//                                                                    /
+//====================================================================/
+
+Version = 4.2;
+
+
+
+//-------------------------------------------------------
+// Component Tree
+//-------------------------------------------------------
+UNIVERSE {
+    Space aquarium(0,0),Square_2D(50, 50, Loop, North, 1, !Map_3D){
+        AgtType phytoplankton(0, 0)[200] {
+            Dim ID(0, 0) As Integer = (0);
+            Dim X(0, 0) As Double = (0.0);
+            Dim Y(0, 0) As Double = (0.0);
+            Dim Layer(0, 0) As Integer = (0);
+            Dim Direction(0, 0) As Double = (0.0);
+            Dim distance(0, 0) As Integer = ();
+        }
+        AgtType zooplankton(0, 0)[20] {
+            Dim ID(0, 0) As Integer = (0);
+            Dim X(0, 0) As Double = (0.0);
+            Dim Y(0, 0) As Double = (0.0);
+            Dim Layer(0, 0) As Integer = (0);
+            Dim Direction(0, 0) As Double = (0.0);
+            Dim Power(0, 0) As Integer = (0);
+        }
+        AgtType fish(0, 0)[100] {
+            Dim ID(0, 0) As Integer = ();
+            Dim X(0, 0) As Double = ();
+            Dim Y(0, 0) As Double = ();
+            Dim Layer(0, 0) As Integer = ();
+            Dim Direction(0, 0) As Double = ();
+            Dim Power(0, 0) As Integer = ();
+        }
+    }
+    Dim num_phyto(0, 0) As Integer = (0);
+    Dim num_zoo(0, 0) As Integer = (0);
+    Dim num_fish(0, 0) As Integer = ();
+}
+
+
+//-------------------------------------------------------
+// Agent Variable Initial Data
+//-------------------------------------------------------
+Initial_Value {
+    UNIVERSE.NUM_PHYTO = 1(1340);
+    UNIVERSE.NUM_ZOO = 1(790);
+    UNIVERSE.NUM_FISH = 1(28);
+}
+
+
+//-------------------------------------------------------
+// Agent Rule
+//-------------------------------------------------------
+#begin_rule UNIVERSE
+Univ_Init{
+Dim i As Integer
+Dim set As Agtset
+
+For i = 0 To Universe.num_phyto-1
+	CreateAgt(Universe.aquarium.phytoplankton)
+Next i
+For i = 0 To Universe.num_zoo-1
+	CreateAgt(Universe.aquarium.zooplankton)
+Next i
+For i = 0 To Universe.num_fish-1
+	CreateAgt(Universe.aquarium.fish)
+Next i
+
+MakeAgtsetSpace(set,Universe.aquarium)
+RandomPutAgtset(set)
+}
+
+Univ_Step_Begin{
+
+}
+
+Univ_Step_End{
+If CountAgt(Universe.aquarium.phytoplankton)==0 Or CountAgt(Universe.aquarium.zooplankton)==0 Or CountAgt(Universe.aquarium.fish)==0 Then
+	ExitSimulationMsgLn("Complete after" & GetCountStep() & "steps")
+End if
+
+}
+
+Univ_Finish{
+
+}
+#end_rule UNIVERSE
+
+
+
+
+//-------------------------------------------------------
+// Agent Rule
+//-------------------------------------------------------
+#begin_rule UNIVERSE.AQUARIUM.PHYTOPLANKTON
+Agt_Init{
+My.Direction=Rnd()*360
+}
+
+Agt_Step{
+Dim one As Agt
+Dim surround As Agtset
+Dim distance As Double
+
+Turn(Rnd()*60-30)
+Forward(0.5)
+
+
+If Rnd() <0.3 Then
+	one  = CreateAgt(Universe.aquarium.phytoplankton)
+	one.X = My.X
+	one.Y = My.Y
+End if
+
+MakeOneAgtsetAroundOwn(surround,1,Universe.aquarium.phytoplankton,False)
+If CountAgtset(surround) >= 10 Then
+	DelAgt(My)
+End if
+
+}
+#end_rule UNIVERSE.AQUARIUM.PHYTOPLANKTON
+
+
+
+
+//-------------------------------------------------------
+// Agent Rule
+//-------------------------------------------------------
+#begin_rule UNIVERSE.AQUARIUM.ZOOPLANKTON
+Agt_Init{
+My.Direction=Rnd()*360
+My.Power = Rnd()*6+4
+}
+
+Agt_Step{
+Dim surround As Agtset
+Dim one As Agt
+
+
+Turn(Rnd()*60-30)
+Forward(2)
+
+My.Power = My.Power-1
+
+MakeOneAgtsetAroundOwn(surround,1,Universe.aquarium.phytoplankton,False)
+If CountAgtset(surround) > 0 Then
+	one = GetAgt(surround,Int(Rnd()*CountAgtSet(surround)))
+	DelAgt(one)
+	My.Power = My.Power+3
+	If My.Power > 10 Then
+	one = CreateAgt(Universe.aquarium.zooplankton)
+	one.X = My.X
+	one.Y = My.Y
+	one.Power = 4
+	My.Power = My.Power-4
+End if
+End if
+
+
+If My.Power*Rnd() < 0.2 Then
+	DelAgt(My)
+End if
+
+}
+#end_rule UNIVERSE.AQUARIUM.ZOOPLANKTON
+
+
+
+
+//-------------------------------------------------------
+// Agent Rule
+//-------------------------------------------------------
+#begin_rule UNIVERSE.AQUARIUM.FISH
+Agt_Init{
+My.Direction=Rnd()*360
+My.Power = Rnd()*6+6
+}
+
+Agt_Step{
+Dim surround As Agtset
+Dim one As Agt
+
+
+
+Turn(Rnd()*60-30)
+Forward(2)
+
+
+My.Power = My.Power-2
+
+MakeOneAgtsetAroundOwn(surround,2,Universe.aquarium.zooplankton,False)
+If CountAgtset(surround) > 0 Then
+	one = GetAgt(surround,Int(Rnd()*CountAgtSet(surround)))
+	DelAgt(one)
+	My.Power = My.Power+3
+	If My.Power > 12 Then
+	one = CreateAgt(Universe.aquarium.zooplankton)
+	one.X = My.X
+	one.Y = My.Y
+	one.Power = 5
+	My.Power = My.Power-6
+End if
+End if
+
+
+If My.Power*Rnd() < 0.8 Then
+	DelAgt(My)
+End if
+
+}
+#end_rule UNIVERSE.AQUARIUM.FISH
+
+
+
+
+//-------------------------------------------------------
+// Simulation Definition Division
+//-------------------------------------------------------
+Single_Simulation {
+    Step_Max = 0;
+    Time_Max = 0;
+    End_Condition = "";
+    Exec_Wait = 0;
+    Exec_Wait_Max = 0;
+    Random_Generator = Java_Standard;
+    Exec_Order = Random;
+    Exec_Order_Random_First_Step_Only = No;
+    Random_Seed = 0;
+    Redraw_Timing = Step;
+    Redraw_Interval = 1;
+    Garbage_Interval = 0;
+}
+
+
+//-------------------------------------------------------
+// Simulation Loop Definition Division
+//-------------------------------------------------------
+Repeat_Simulation {
+    Value_Change = None;
+    Initial_Value_Change_None {
+        Repeat_Max = 1;
+    }
+}
+
+
+//-------------------------------------------------------
+// 2 Dimension Map Display Definition Division
+//-------------------------------------------------------
+Map_Output {
+    Map_Space_Name = "Universe.aquarium";
+    Map_Name = "aquarium";
+    Title = "";
+    Disable = No;
+    Background_Color = 255, 255, 255;
+    Position_x = 875;
+    Position_y = 5;
+    Size_x = 500;
+    Size_y = 300;
+    Map_Cell_Size = 4;
+    Remarks = Yes;
+    Legend_Pos = Top;
+    Font_Name = "Dialog";
+    Font_Char_Set = 81;
+    Font_Size = 12.0;
+    Font_Style = 0;
+    Font_Color = 0, 0, 0;
+    Font_Background_Color = 255, 255, 255;
+    FastDraw = Yes;
+    Draw_Timing = Simulation_Step;
+    Draw_Interval = 1;
+    Axis_Label = "", "";
+    Draw_Range = 0, 0, 50, 50;
+    Ruled_Line = No;
+    Text_Display = No;
+    Text_Display_Variable_Name = "";
+    Chess_Type_Display_Position = No;
+    Background_Transparent = No;
+    Target_Layer = 0;
+    Coordinate_Display = No;
+    Space_Kind = Square_2D;
+    BG_Pict = No;
+    BG_Type = 0;
+    BG_Var_Name = "";
+    BG_File_Name = "";
+    Origin_Position = 2;
+    Output_Group_Name = "";
+    Output {
+        Map_Element_Name = "phytoplankton";
+        Map_Element = Agent_Variable;
+        Output_Expression = "Universe.aquarium.phytoplankton";
+        Draw_Line = No;
+        Collection_Name = "";
+        Line_Type = 0;
+        Line_Arrow = 0;
+        Line_Width = 0;
+        Line_Color = 0, 0, 0;
+        Line_Type_Variable = "";
+        Line_Arrow_Variable = "";
+        Line_Width_Variable = "";
+        Line_Color_Variable = "";
+        Agent_Color = 51,255,51;
+        Marker_Id = 1;
+        Effective_Figures = 0;
+        Format_Id = 0;
+        Agent_Image_Direction = No;
+        Icon_Type = 0;
+        Icon_Var_Name = "";
+        Icon_Transparent = No;
+        Icon_Enlarg_Reduce = No;
+        Icon_File_Name = "";
+        Num_Display = No;
+        Num_Var_Name = "";
+        Agent_Image_Magnify_by_value = Yes;
+        Agent_Image_Magnify_Value = 1.0;
+        Agent_Image_Magnify_Variable_Name = "Universe.aquarium.phytoplankton.ID";
+        Agent_Image_Transparency_by_value = Yes;
+        Agent_Image_Transparency_Value = 0.0;
+        Agent_Image_Transparency_Variable_Name = "Universe.aquarium.phytoplankton.ID";
+    }
+    Output {
+        Map_Element_Name = "zooplankton";
+        Map_Element = Agent_Variable;
+        Output_Expression = "Universe.aquarium.zooplankton";
+        Draw_Line = No;
+        Collection_Name = "";
+        Line_Type = 0;
+        Line_Arrow = 0;
+        Line_Width = 0;
+        Line_Color = 0, 0, 0;
+        Line_Type_Variable = "";
+        Line_Arrow_Variable = "";
+        Line_Width_Variable = "";
+        Line_Color_Variable = "";
+        Agent_Color = 255,0,0;
+        Marker_Id = 1;
+        Effective_Figures = 0;
+        Format_Id = 0;
+        Agent_Image_Direction = No;
+        Icon_Type = 0;
+        Icon_Var_Name = "";
+        Icon_Transparent = No;
+        Icon_Enlarg_Reduce = No;
+        Icon_File_Name = "";
+        Num_Display = No;
+        Num_Var_Name = "";
+        Agent_Image_Magnify_by_value = Yes;
+        Agent_Image_Magnify_Value = 1.0;
+        Agent_Image_Magnify_Variable_Name = "Universe.aquarium.zooplankton.ID";
+        Agent_Image_Transparency_by_value = Yes;
+        Agent_Image_Transparency_Value = 0.0;
+        Agent_Image_Transparency_Variable_Name = "Universe.aquarium.zooplankton.ID";
+    }
+    Output {
+        Map_Element_Name = "fish";
+        Map_Element = Agent_Variable;
+        Output_Expression = "Universe.aquarium.fish";
+        Draw_Line = No;
+        Collection_Name = "";
+        Line_Type = 0;
+        Line_Arrow = 0;
+        Line_Width = 0;
+        Line_Color = 0, 0, 0;
+        Line_Type_Variable = "";
+        Line_Arrow_Variable = "";
+        Line_Width_Variable = "";
+        Line_Color_Variable = "";
+        Agent_Color = 51,0,255;
+        Marker_Id = 1;
+        Effective_Figures = 0;
+        Format_Id = 0;
+        Agent_Image_Direction = No;
+        Icon_Type = 0;
+        Icon_Var_Name = "";
+        Icon_Transparent = No;
+        Icon_Enlarg_Reduce = No;
+        Icon_File_Name = "";
+        Num_Display = No;
+        Num_Var_Name = "";
+        Agent_Image_Magnify_by_value = Yes;
+        Agent_Image_Magnify_Value = 1.0;
+        Agent_Image_Magnify_Variable_Name = "Universe.aquarium.fish.ID";
+        Agent_Image_Transparency_by_value = Yes;
+        Agent_Image_Transparency_Value = 0.0;
+        Agent_Image_Transparency_Variable_Name = "Universe.aquarium.fish.ID";
+    }
+}
+
+
+//-------------------------------------------------------
+// Time Graph Output Definition Division
+//-------------------------------------------------------
+Time_Graph {
+    Font_Name = "Dialog";
+    Font_Char_Set = 81;
+    Font_Size = 12.0;
+    Font_Style = 0;
+    Font_Color = 0, 0, 0;
+    Font_Background_Color = 255, 255, 255;
+    Draw_Timing = Simulation_Step;
+    Draw_Interval = 1;
+    Graph_Name = "The number of creature";
+    Title = "";
+    Disable = No;
+    Background_Color = 255, 255, 255;
+    Remarks = Yes;
+    Legend_Pos = Top;
+    FastDraw = No;
+    Position_x = 71;
+    Position_y = 262;
+    Size_x = 866;
+    Size_y = 576;
+    Map_Cell_Size = -1;
+    Axis_Label = "", "";
+    Draw_By_JFree_Chart = Yes;
+    Scale = 0, 0.0, 1000, 100.0, 100, 10.0;
+    ScaleAuto = Yes, Yes;
+    Output_Group_Name = "";
+    Output {
+        Graph_Element_Name = "phytoplankton";
+        Line_Color = 255, 0, 0;
+        Line_Width = 2;
+        Marker_Id = 0;
+        Output_Expression = "CountAgt(Universe.aquarium.phytoplankton)";
+        Expression_Value_Display = No;
+        Effective_Fraction_Figures = 0;
+        Graph_Element_Color = (0, 255, 0);
+    }
+    Output {
+        Graph_Element_Name = "zooplankton";
+        Line_Color = 0, 0, 255;
+        Line_Width = 2;
+        Marker_Id = 0;
+        Output_Expression = "CountAgt(Universe.aquarium.zooplankton) ";
+        Expression_Value_Display = No;
+        Effective_Fraction_Figures = 0;
+        Graph_Element_Color = (204, 0, 51);
+    }
+    Output {
+        Graph_Element_Name = "fish";
+        Line_Color = 255, 0, 0;
+        Line_Width = 2;
+        Marker_Id = 0;
+        Output_Expression = "Universe.num_fish";
+        Expression_Value_Display = No;
+        Effective_Fraction_Figures = 0;
+        Graph_Element_Color = (0, 51, 204);
+    }
+}
+
+
+//-------------------------------------------------------
+// Control Panel Definition Division
+//-------------------------------------------------------
+Control_Panel {
+    Display_Area = 288, 124, 516, 268;
+    Display_Type = 0;
+    Panel_Item {
+        Item_Type = Slider;
+        Item_Name = "The number of phytoplanltons";
+        Display_Area = 0, 0, 0, 0;
+        Font_Name = "";
+        Font_Char_Set = 0;
+        Font_Size = 0.0;
+        Font_Style = 0;
+        Font_Color = 0, 0, 0;
+        Font_Background_Color = 0, 0, 0;
+        Var_Name = "Universe.num_phyto";
+        Slider_Range_Max = 199;
+        Slider_Value_Min = 10.0;
+        Slider_Value_Step = 10.0;
+        Slider_Value = "133";
+    }
+    Panel_Item {
+        Item_Type = Slider;
+        Item_Name = "The number of zooplanktons";
+        Display_Area = 0, 0, 0, 0;
+        Font_Name = "";
+        Font_Char_Set = 0;
+        Font_Size = 0.0;
+        Font_Style = 0;
+        Font_Color = 0, 0, 0;
+        Font_Background_Color = 0, 0, 0;
+        Var_Name = "Universe.num_zoo";
+        Slider_Range_Max = 199;
+        Slider_Value_Min = 10.0;
+        Slider_Value_Step = 10.0;
+        Slider_Value = "78";
+    }
+    Panel_Item {
+        Item_Type = Slider;
+        Item_Name = "The number of fish";
+        Display_Area = 0, 0, 0, 0;
+        Font_Name = "";
+        Font_Char_Set = 0;
+        Font_Size = 0.0;
+        Font_Style = 0;
+        Font_Color = 0, 0, 0;
+        Font_Background_Color = 0, 0, 0;
+        Var_Name = "Universe.num_fish";
+        Slider_Range_Max = 90;
+        Slider_Value_Min = 10.0;
+        Slider_Value_Step = 1.0;
+        Slider_Value = "18";
+    }
+}
+
+
+//-------------------------------------------------------
+// Space Initial Value Definition Divsion
+//-------------------------------------------------------
+Space_Initial {
+}
+
+
+//-------------------------------------------------------
+// Other Miscellaneous Data Definition Division
+//-------------------------------------------------------
+Others_Data {
+    Indent = 4;
+    Rule_Colored = Yes;
+    Rule_LineNo = Yes;
+    Window_Hide_Run = 1;
+    Debug_Position_x = 75;
+    Debug_Position_y = 75;
+    Debug_Size_x = 400;
+    Debug_Size_y = 200;
+    Console_Position_x = 2;
+    Console_Position_y = 400;
+    Console_Size_x = 600;
+    Console_Size_y = 120;
+    Componen_Tree_Position_x = 21;
+    Componen_Tree_Position_y = 2;
+    Componen_Tree_Size_x = 234;
+    Componen_Tree_Size_y = 292;
+    Console_Background_Color = 16777215;
+    Console_Foreground_Color = 255;
+    Console_DisplayLines_Max = 500;
+    plug_in_module_name = "";
+    Font_Name = "Dialog";
+    Font_Char_Set = 0;
+    Font_Size = 14.0;
+    Font_Style = 0;
+    Font_Color = 0, 0, 0;
+    Font_Background_Color = 0, 0, 0;
+}
+
+
+//-------------------------------------------------------
+// Network Information Definition Division
+//-------------------------------------------------------
+Network_Info {
+    Global_Space_Area = 0, 0, 100, 100;
+    Local_Space_Info {
+    }
+}
+
+
+//-------------------------------------------------------
+// Window Location Definition Division
+//-------------------------------------------------------
+Window_Rectangle {
+    Window_Name = Main_Window, -9, -9, 1938, 1048;
+    Window_Name = Output_Setting_Window, 744, 349, 480, 350;
+    Window_Name = Artisoc_Help_Window, 10, 10, 400, 300;
+}
+
+
+//-------------------------------------------------------
+// Help Favorite Division
+//-------------------------------------------------------
+Help_Favorite {
+}
+
+
+//-------------------------------------------------------
+// Model Description Division
+//-------------------------------------------------------
+Model_Description {
+    Universe {
+        Function Univ_Init {
+        }
+        Function Univ_Step_Begin {
+        }
+        Function Univ_Step_End {
+        }
+        Function Univ_Finish {
+        }
+    }
+    Space Universe.aquarium {
+    }
+    Agent Universe.aquarium.phytoplankton {
+        Function Agt_Init {
+        }
+        Function Agt_Step {
+        }
+    }
+    Agent Universe.aquarium.zooplankton {
+        Function Agt_Init {
+        }
+        Function Agt_Step {
+        }
+    }
+    Agent Universe.aquarium.fish {
+        Function Agt_Init {
+        }
+        Function Agt_Step {
+        }
+    }
+}
